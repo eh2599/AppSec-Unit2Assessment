@@ -1,0 +1,5 @@
+pytest
+flask_wtf
+Werkzeug
+passlib
+Flask~=1.1.2
