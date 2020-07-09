@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, session
 import subprocess, secrets
 
+from passlib.hash import sha256_crypt
+
 app = Flask(__name__)
 secret_key = secrets.token_urlsafe(32)
 app.config['SECRET_KEY'] = secret_key
@@ -45,7 +47,7 @@ def register():
         return render_template('register.html')
     elif request.method == 'POST':
         username = request.values['uname']
-        password = request.values['pword']
+        password = sha256_crypt.encrypt(request.values['pword']);
         phone = request.values['2fa']
         return register_with_user_info(username, password, phone)
 
@@ -54,7 +56,7 @@ def check_user_authentication(username, password, phone):
     if username not in registered_users:
         return render_template('login_failure.html')
     else:
-        if password == registered_users[username][0]:
+        if sha256_crypt.verify(password, registered_users[username][0]):
             if phone == registered_users[username][1]:
                 session['username'] = username
                 return render_template('login_success.html')
