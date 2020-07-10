@@ -29,10 +29,11 @@ registered_users = {}
 # https://stackoverflow.com/questions/29464276/add-response-headers-to-flask-web-app
 @app.after_request
 def add_security_headers(response):
-    # Reference for Content Securityn Policy implementation: https://csp.withgoogle.com/docs/index.html
     response.headers['Content-Security-Policy'] = "default-src \'self\' "
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000'
     response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
     return response
 
 
@@ -102,6 +103,7 @@ def spell_check():
             fp.write(str(request.values['inputtext']))
             fp.close()
             text_to_check = str(request.values['inputtext'])
+            # Reference for implementing subprocess: https://docs.python.org/2/library/subprocess.html
             result = subprocess.check_output(["./a.out", "input_text.txt", "wordlist.txt"]).decode(
                 "utf-8").strip().replace('\n', ', ')
             return render_template('spell_check_results.html', text_to_check=text_to_check, result=result)
