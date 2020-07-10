@@ -1,11 +1,19 @@
-from flask import Flask, render_template, request, session
-import subprocess, secrets
+import secrets
+import subprocess
 
-from passlib.hash import sha256_crypt
+from flask import Flask, render_template, request, session
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
 secret_key = secrets.token_urlsafe(32)
 app.config['SECRET_KEY'] = secret_key
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=600
+)
+
+bcrypt = Bcrypt(app)
 
 registered_users = {}
 
@@ -33,11 +41,11 @@ def index():
         return render_template('index.html')
 
 
-def register_with_user_info(username, password, phone):
+def register_with_user_info(username, hashed_password, phone):
     if username in registered_users:
         return render_template('username_already_exists.html', username=username)
     else:
-        registered_users[username] = [password, phone]
+        registered_users[username] = [hashed_password, phone]
         return render_template('registration_complete.html', username=username)
 
 
@@ -47,18 +55,20 @@ def register():
         return render_template('register.html')
     elif request.method == 'POST':
         username = request.values['uname']
-        password = sha256_crypt.encrypt(request.values['pword']);
+        hashed_password = bcrypt.generate_password_hash(request.values['pword']).decode('utf-8')
         phone = request.values['2fa']
-        return register_with_user_info(username, password, phone)
+        return register_with_user_info(username, hashed_password, phone)
 
 
 def check_user_authentication(username, password, phone):
     if username not in registered_users:
         return render_template('login_failure.html')
     else:
-        if sha256_crypt.verify(password, registered_users[username][0]):
+        if bcrypt.check_password_hash(registered_users[username][0], password):
             if phone == registered_users[username][1]:
+                session.clear()
                 session['username'] = username
+                session.permanent = True
                 return render_template('login_success.html')
             else:
                 return render_template('tfa_failure.html')
