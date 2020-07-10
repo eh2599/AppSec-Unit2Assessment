@@ -13,6 +13,7 @@
     <p/>
     Cell Phone Number: <INPUT SIZE=32 id="2fa" name="2fa" TYPE='text'/>
     <p/>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <button id="registerbutton" type="submit">Register</button>
 </form>
 <p/>
